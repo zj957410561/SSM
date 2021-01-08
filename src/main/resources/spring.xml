@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context" xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/aop https://www.springframework.org/schema/aop/spring-aop.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+
+    <!-- 加载Properties文件-->
+    <context:property-placeholder local-override="true" location="classpath:jdbc.properties"/>
+
+    <!-- 开启spring容器的包扫描。-->
+    <context:component-scan base-package="com.cn">
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller" />
+    </context:component-scan>
+
+    <!-- 配置连接池-->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="driverClassName" value="${jdbc.driver}"/>
+        <property name="url" value="${jdbc.url}"/>
+        <property name="username" value="${jdbc.user}"/>
+        <property name="password" value="${jdbc.password}"/>
+    </bean>
+
+    <!-- 配置SqlSession-->
+    <bean id="sqlSession" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <!-- 如果后期不用Mapper的xml配置文件，全注解配置Java类配置，该属性也可以省略-->
+        <property name="mapperLocations" value="classpath:com/cn/zj/mapper/*.xml"/>
+        <!-- 指定mybatis的配置文件，如果有的话-->
+        <!--<property name="configLocation" value="classpath:mybatis-config.xml"/>-->
+    </bean>
+
+    <!-- 配置包扫描，扫描Mapper接口-->
+    <!-- Mapper的代理对象一定是由mybatis自己生成的，然后再转交给ioc来管理，为了注入到service中-->
+    <bean id="mapperScannerConfigurer" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <!-- 看清楚时BeanName 不是Bean 所有给value而不是ref-->
+        <property name="sqlSessionFactoryBeanName" value="sqlSession"/>
+        <!-- 指定接口所在的包-->
+        <property name="basePackage" value="com.cn.zj.mapper"/>
+    </bean>
+
+    <!--开启注解aop支持-->
+    <aop:aspectj-autoproxy proxy-target-class="true"/>
+
+    <!-- 开启平台事务管理器 -->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <!-- 开启注解事务支持-->
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+
+    <!-- 有多个配置文件的情况下，可以在这里用import导入别的配置文件Spring,但是这个写法实际开发时很少使用！！-->
+    <!--<import resource="classpath:spring-shiro.xml"/>-->
+</beans>
